@@ -371,7 +371,7 @@ namespace CNTK
                         clonedInput = leafVariablesCloneMap.at(cloneeInput);
                     else
                     {
-                        if (cloneeInput.IsParameter())
+                        if (cloneeInput.IsParameter() || cloneeInput.IsConstant())
                         {
                             switch (parameterCloneMethod)
                             {
@@ -383,7 +383,11 @@ namespace CNTK
                                 clonedInput = cloneeInput;
                                 break;
                             case ParameterCloningMethod::Freeze:
-                                clonedInput = Constant(Parameter(cloneeInput).Value(), cloneeInput.Name());
+                                if (cloneeInput.IsParameter())
+                                    clonedInput = Constant(Parameter(cloneeInput).Value(), cloneeInput.Name());
+                                else
+                                    clonedInput = Constant(Constant(cloneeInput).Value(), cloneeInput.Name());
+
                                 leafVariablesCloneMap[cloneeInput] = clonedInput;
                                 break;
                             default:
@@ -574,7 +578,6 @@ namespace CNTK
     /*static*/ const std::wstring PrimitiveFunction::AttributeNameNormalizationTimeConstant = L"normalizationTimeConstant";
     /*static*/ const std::wstring PrimitiveFunction::AttributeNameBlendTimeConstant = L"blendTimeConstant";
     /*static*/ const std::wstring PrimitiveFunction::AttributeNameEpsilon = L"epsilon";
-    /*static*/ const std::wstring PrimitiveFunction::AttributeNameSamplesSeen = L"samplesSeen";
     /*static*/ const std::wstring PrimitiveFunction::AttributeNameUseCuDNNEngine = L"useCuDNNEngine";
     /*static*/ const std::wstring PrimitiveFunction::AttributeNameNewDynamicAxes = L"newDynamicAxes";
     /*static*/ const std::wstring PrimitiveFunction::AttributeNameBeginIndex = L"beginIndex";
@@ -1609,9 +1612,8 @@ namespace CNTK
             auto blendTimeConstant = functionConfig[PrimitiveFunction::AttributeNameBlendTimeConstant].Value<double>();
             auto epsilon = functionConfig[PrimitiveFunction::AttributeNameEpsilon].Value<double>();
             auto useCuDNNEngine = functionConfig[PrimitiveFunction::AttributeNameUseCuDNNEngine].Value<bool>();
-            size_t samplesSeen = functionConfig[PrimitiveFunction::AttributeNameSamplesSeen].Value<size_t>();
 
-            computationNodePtr = New<BatchNormalizationNode<ElementType>>(network->GetDeviceId(), internalNodeName, spatial, normalizationTimeConstant, blendTimeConstant, epsilon, !useCuDNNEngine, ImageLayoutKind::CHW, samplesSeen);
+            computationNodePtr = New<BatchNormalizationNode<ElementType>>(network->GetDeviceId(), internalNodeName, spatial, normalizationTimeConstant, blendTimeConstant, epsilon, !useCuDNNEngine, ImageLayoutKind::CHW);
             break;
         }
         case PrimitiveOpType::Combine:
@@ -1811,13 +1813,6 @@ namespace CNTK
                     {
                         LogicError("The output Variable shape %S does not match the SampleLayout shape %s of the corresponding ComputationNode in the network", outputShape.AsString().c_str(), ((std::string)computationNodeSampleLayout).c_str());
                     }
-
-                    // Cache the list of all stateful ComputationNodes
-                    auto primitiveOwnerFunction = dynamic_cast<PrimitiveFunction*>(outputVar.Owner().get());
-
-                    // TODO: Dropout random seed is another piece of state that needs retention
-                    if (primitiveOwnerFunction->OpType() == PrimitiveOpType::BatchNormalization)
-                        m_statefulFunctionsMap[primitiveOwnerFunction] = computationNodePtr;
                 }
             }
 
@@ -2492,22 +2487,6 @@ namespace CNTK
 
         m_computationNetwork->ForwardProp(outputsToEvaluate);
 
-        // Update any state updates from stateful computation nodes
-        for (auto statefulFunctionNodePair : m_statefulFunctionsMap)
-        {
-            auto statefulFunction = statefulFunctionNodePair.first;
-            if (statefulFunction->OpType() == PrimitiveOpType::BatchNormalization)
-            {
-                auto& samplesSeenAttribute = statefulFunction->m_attributes[PrimitiveFunction::AttributeNameSamplesSeen].Value<size_t>();
-                if (dataType == DataType::Float)
-                    samplesSeenAttribute = statefulFunctionNodePair.second->As<BatchNormalizationNode<float>>()->GetSamplesSeen();
-                else if (dataType == DataType::Double)
-                    samplesSeenAttribute = statefulFunctionNodePair.second->As<BatchNormalizationNode<double>>()->GetSamplesSeen();
-                else
-                    InvalidArgument("Unsupported DataType %s", DataTypeName(dataType));
-            }
-        }
-
         GetNetworkOutputs(outputs);
 
         // TODO: How to deal with the specified 'computeDevice'
@@ -2980,7 +2959,6 @@ namespace CNTK
         additionalProperties[PrimitiveFunction::AttributeNameBlendTimeConstant] = blendTimeConstant;
         additionalProperties[PrimitiveFunction::AttributeNameEpsilon] = epsilon;
         additionalProperties[PrimitiveFunction::AttributeNameUseCuDNNEngine] = useCuDNNEngine;
-        additionalProperties[PrimitiveFunction::AttributeNameSamplesSeen] = (size_t)0;
 
         std::vector<Variable> operands = { operand, scale, bias, runningMean, runningInvStd };
         return CompositeFunction::Create(MakeSharedObject<PrimitiveFunction>(PrimitiveOpType::BatchNormalization,

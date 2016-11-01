@@ -185,7 +185,6 @@ namespace CNTK
         static const std::wstring AttributeNameNormalizationTimeConstant;
         static const std::wstring AttributeNameBlendTimeConstant;
         static const std::wstring AttributeNameEpsilon;
-        static const std::wstring AttributeNameSamplesSeen;
         static const std::wstring AttributeNameUseCuDNNEngine;
         static const std::wstring AttributeNameNewDynamicAxes;
         static const std::wstring AttributeNameBeginIndex;
@@ -839,11 +838,6 @@ namespace CNTK
         bool m_networkMatricesAllocated;
 
         std::unordered_map<Parameter, size_t> m_lastRecordedParameterValueTimeStamps;
-
-        // TODO: This is a temporary hack to sidestep the issue of some of the "parameters" (or state)
-        // being stored by nodes as part of the node itself which ideally should be external
-        // This is however an architectural issue that needs to addressed more broadly
-        std::unordered_map<PrimitiveFunction*, Microsoft::MSR::CNTK::ComputationNodeBasePtr> m_statefulFunctionsMap;
 
         static const size_t s_serializationVersion = 1;
     };

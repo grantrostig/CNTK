@@ -2072,7 +2072,7 @@ private:
 
     private:
         Constant(const NDArrayViewPtr& value, const std::wstring& name, const std::wstring& uid)
-            : Variable(value->Shape(), VariableKind::Constant, value->GetDataType(), value->DeepClone(true), false, {}, name, uid)
+            : Variable(value->Shape(), VariableKind::Constant, value->GetDataType(), value->DeepClone(), false, {}, name, uid)
         {}
 
         ///
@@ -2083,7 +2083,6 @@ private:
         {
             m_dataFields->SetValueInitialization(initializer, device);
         }
-
     };
 
     // Implementation note: The Variable type is a value type and not polymorphic in nature. 
