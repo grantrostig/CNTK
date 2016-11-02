@@ -583,9 +583,17 @@ namespace CNTK
         ///
         /// Creates a new NDArrayView with newly allocated storage on the same device as 'this' view and copies 'this' view's contents into the newly allocated view.
         ///
-        inline NDArrayViewPtr DeepClone(bool readOnly = false) const
+        inline NDArrayViewPtr DeepClone(bool readOnly) const
         {
             return DeepClone(this->Device(), readOnly);
+        }
+
+        ///
+        /// Creates a new NDArrayView with newly allocated storage on the same device as 'this' view and copies 'this' view's contents into the newly allocated view.
+        ///
+        inline NDArrayViewPtr DeepClone() const
+        {
+            return DeepClone(this->IsReadOnly());
         }
 
         ///
@@ -859,7 +867,15 @@ namespace CNTK
         ///
         /// Creates a new Value with newly allocated storage on the same device as 'this' Value and copies 'this' Value's contents into the newly allocated Value.
         ///
-        virtual ValuePtr DeepClone(bool readOnly = false) const;
+        virtual ValuePtr DeepClone(bool readOnly) const;
+
+        ///
+        /// Creates a new Value with newly allocated storage on the same device as 'this' Value and copies 'this' Value's contents into the newly allocated Value.
+        ///
+        ValuePtr DeepClone() const
+        {
+            return DeepClone(IsReadOnly());
+        }
 
         ///
         /// Creates a new Value which is an alias of 'this' Value.
@@ -2038,7 +2054,7 @@ private:
         ///
         /// Create a scalar constant. The specified value is cast to the specified DataType
         ///
-        static inline ::CNTK::Constant Scalar(::CNTK::DataType dataType, double value, const ::CNTK::DeviceDescriptor& device = ::CNTK::DeviceDescriptor::CPUDevice())
+        static inline ::CNTK::Constant Scalar(::CNTK::DataType dataType, double value, const ::CNTK::DeviceDescriptor& device = DeviceDescriptor::UseDefaultDevice())
         {
             return Constant({}, dataType, value, device);
         }
@@ -2047,7 +2063,7 @@ private:
         /// Create a scalar constant. The specified value is cast to the specified DataType
         ///
         template<typename ElementType>
-        static inline ::CNTK::Constant Scalar(ElementType value, const ::CNTK::DeviceDescriptor& device = ::CNTK::DeviceDescriptor::CPUDevice())
+        static inline ::CNTK::Constant Scalar(ElementType value, const ::CNTK::DeviceDescriptor& device = DeviceDescriptor::UseDefaultDevice())
         {
             return Constant({}, value, device);
         }

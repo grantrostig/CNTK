@@ -1338,14 +1338,12 @@ namespace CNTK
 
             NDArrayViewPtr value = variable.IsConstant() ? Constant(variable).Value() : Parameter(variable).Value();
             std::shared_ptr<const Matrix<ElementType>> valueMatrix = variable.IsConstant() ? value->GetMatrix<ElementType>() : value->GetWritableMatrix<ElementType>();
-            if (variable.IsParameter() || (valueMatrix->GetDeviceId() == network->GetDeviceId()))
-                computationNodePtr->Value() = valueMatrix->AsReference();
-            else
-            {
-                Matrix<ElementType> clonedMatrix(valueMatrix->GetNumRows(), valueMatrix->GetNumCols(), network->GetDeviceId(), valueMatrix->GetMatrixType(), valueMatrix->GetFormat());
-                clonedMatrix.AssignValuesOf(*valueMatrix);
-                computationNodePtr->Value() = std::move(clonedMatrix);
-            }
+
+            // For constants, migrate the valueMatrix to the right device if needed
+            if (variable.IsConstant() && (valueMatrix->GetDeviceId() != network->GetDeviceId()))
+                valueMatrix->TransferFromDeviceToDevice(valueMatrix->GetDeviceId(), network->GetDeviceId(), /*isBeingMoved = */ true, /*emptyTransfer =*/ false, /*updatePreferredDevice =*/ true);
+
+            computationNodePtr->Value() = valueMatrix->AsReference();
         }
         else if (variable.IsInput())
         {
@@ -1702,9 +1700,10 @@ namespace CNTK
                 // If the inputVar is a constant and not the right DataType let's coerce it to the right type
                 if (inputVar.IsConstant() && (nonConstInputDataType != DataType::Unknown) && (inputVar.GetDataType() != nonConstInputDataType))
                 {
-                    auto constantValueCPU = Constant(inputVar).Value()->DeepClone(DeviceDescriptor::CPUDevice(), true);
+                    auto originalConstantValue = Constant(inputVar).Value();
+                    auto constantValueCPU = originalConstantValue->DeepClone(DeviceDescriptor::CPUDevice(), true);
                     NDArrayViewPtr newConstantValue = CloneAsDataType(constantValueCPU, nonConstInputDataType, true);
-                    inputVar = Constant(newConstantValue);
+                    inputVar = Constant(newConstantValue->DeepClone(originalConstantValue->Device(), originalConstantValue->IsReadOnly()), inputVar.Name());
                 }
 
                 auto baseNodePtr = GetNode(inputVar, network, builder, variableToNodeMap, isVariableRootMap);
