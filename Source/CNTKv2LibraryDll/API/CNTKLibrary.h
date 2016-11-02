@@ -608,6 +608,11 @@ namespace CNTK
         CNTK_API void CopyFrom(const NDArrayView& source);
 
         ///
+        /// Change the device of 'this' NDArrayView to the specified device
+        ///
+        CNTK_API void ChangeDevice(const DeviceDescriptor& device);
+
+        ///
         /// Static method to construct a new NDArrayView object whose contents are drawn from a normal distribution with the specified mean and standard deviation..
         ///
         template <typename ElementType>
@@ -2002,7 +2007,7 @@ private:
 
     private:
         explicit Parameter(const NDArrayViewPtr& value, const std::wstring& name, const std::wstring& uid)
-            : Variable(value->Shape(), VariableKind::Parameter, value->GetDataType(), value->DeepClone(), true, {}, name, uid)
+            : Variable(value->Shape(), VariableKind::Parameter, value->GetDataType(), value->DeepClone(false), true, {}, name, uid)
         {}
     };
 
@@ -2054,7 +2059,7 @@ private:
         ///
         /// Create a scalar constant. The specified value is cast to the specified DataType
         ///
-        static inline ::CNTK::Constant Scalar(::CNTK::DataType dataType, double value, const ::CNTK::DeviceDescriptor& device = DeviceDescriptor::UseDefaultDevice())
+        static inline ::CNTK::Constant Scalar(::CNTK::DataType dataType, double value, const ::CNTK::DeviceDescriptor& device = DeviceDescriptor::CPUDevice())
         {
             return Constant({}, dataType, value, device);
         }
@@ -2063,7 +2068,7 @@ private:
         /// Create a scalar constant. The specified value is cast to the specified DataType
         ///
         template<typename ElementType>
-        static inline ::CNTK::Constant Scalar(ElementType value, const ::CNTK::DeviceDescriptor& device = DeviceDescriptor::UseDefaultDevice())
+        static inline ::CNTK::Constant Scalar(ElementType value, const ::CNTK::DeviceDescriptor& device = DeviceDescriptor::CPUDevice())
         {
             return Constant({}, value, device);
         }
