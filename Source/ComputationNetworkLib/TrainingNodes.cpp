@@ -123,13 +123,25 @@ void RandomSampleNode<ElemType>::ForwardPropNonLooping()
 {
     Base::UpdateWeightsPrefixSum();
     Matrix<ElemType>& valueMatrix = ValueAsMatrix();
-    // TODO: Should we prepare the CSC data directly on the CPU and move it in one go?
-    // Currently the reader will place the data onto the GPU. It will then be pulled on-demand to the CPU once (and cached there).
-    valueMatrix.TransferToDeviceIfNotThere(CPUDEVICE, /*ismoved =*/ true/*means: BOTH state not ok */, /*emptyTransfer =*/ true, /*updatePreferredDevice =*/ false);
-    valueMatrix.SetDevice(CPUDEVICE);
 
-    // BUGBUG: matrix type should be configured during validation
-    valueMatrix.SwitchToMatrixType(SPARSE, matrixFormatSparseCSC, false);
+    if (valueMatrix.GetMatrixType() != SPARSE)
+    {
+        // BUGBUG: matrix type should be configured during validation
+        // We should allocate a new one instead of switching the type in place since switching in place may
+        // affect other nodes who share this matrix due to memory sharing
+        auto newSparseValueMatrix = Matrix<ElemType>(valueMatrix.GetNumRows(), valueMatrix.GetNumCols(), CPUDEVICE, SPARSE, matrixFormatSparseCSC);
+        valueMatrix = std::move(newSparseValueMatrix);
+    }
+    else
+    {
+        // TODO: Should we prepare the CSC data directly on the CPU and move it in one go?
+        // Currently the reader will place the data onto the GPU. It will then be pulled on-demand to the CPU once (and cached there).
+        valueMatrix.TransferToDeviceIfNotThere(CPUDEVICE, /*ismoved =*/ true/*means: BOTH state not ok */, /*emptyTransfer =*/ true, /*updatePreferredDevice =*/ false);
+
+        // BUGUBUG: This is a no-op; was the intent to change the preferred device to CPU?
+        valueMatrix.SetDevice(CPUDEVICE);
+    }
+
     valueMatrix.Reset();
 
     // Get vector with indices of randomly sampled classes

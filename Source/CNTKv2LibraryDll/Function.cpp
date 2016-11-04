@@ -786,7 +786,7 @@ namespace CNTK
             }
             case PrimitiveOpType::SumAll:
                 assert(inputs.size() == 1);
-                outputShape = {};
+                outputShape = {1};
                 break;
             case PrimitiveOpType::Plus:
             case PrimitiveOpType::Minus:
