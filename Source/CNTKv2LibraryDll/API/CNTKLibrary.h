@@ -957,12 +957,12 @@ namespace CNTK
         CNTK_API static UniqueDynamicAxesNames s_uniqueDynamicAxisNames;
 
     public:
-        CNTK_API static const std::vector<Axis> DefaultInputVariableDynamicAxes;
+        CNTK_API static const std::vector<Axis>& DefaultInputVariableDynamicAxes();
 
         ///
         /// Axis object representing unknown dynamic axes
         ///
-        CNTK_API static const std::vector<Axis> UnknownDynamicAxes;
+        CNTK_API static const std::vector<Axis>& UnknownDynamicAxes();
 
     public:
         ///
@@ -1569,8 +1569,8 @@ namespace CNTK
     typedef Dictionary ParameterInitializer;
 
     // Forward declarations
-    inline Variable PlaceholderVariable(const NDShape& shape, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::UnknownDynamicAxes);
-    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes);
+    inline Variable PlaceholderVariable(const NDShape& shape, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::UnknownDynamicAxes());
+    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes());
     inline Variable OutputVariable(const NDShape& shape, ::CNTK::DataType dataType, Function* ownerFunction, const std::vector<Axis>& dynamicAxes, const std::wstring& name = L"");
 
     ///
@@ -1599,7 +1599,7 @@ namespace CNTK
 #ifndef SWIG
     private:
         friend inline Variable PlaceholderVariable(const NDShape& shape, const std::wstring& name, const std::vector<Axis>& dynamicAxes);
-        friend inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name, const std::vector<Axis>& dynamicAxes /*= Axis::DefaultInputVariableDynamicAxes*/);
+        friend inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name, const std::vector<Axis>& dynamicAxes /*= Axis::DefaultInputVariableDynamicAxes()*/);
         friend inline Variable OutputVariable(const NDShape& shape, ::CNTK::DataType dataType, Function* ownerFunction, const std::vector<Axis>& dynamicAxes, const std::wstring& name /*= L""*/);
 #endif
 
@@ -1833,7 +1833,7 @@ private:
     /// Create a Placeholder variable to be used as a temporary/placeholder input to a Function.
     /// All placeholder inputs of a Function must be replaced with non-placeholder Variables before Forward evaluation of the Function.
     ///
-    inline Variable PlaceholderVariable(const NDShape& shape, const std::vector<Axis>& dynamicAxes = Axis::UnknownDynamicAxes)
+    inline Variable PlaceholderVariable(const NDShape& shape, const std::vector<Axis>& dynamicAxes = Axis::UnknownDynamicAxes())
     {
         return PlaceholderVariable(shape, L"", dynamicAxes);
     }
@@ -1844,13 +1844,13 @@ private:
     ///
     inline Variable PlaceholderVariable(const std::wstring& name = L"")
     {
-        return PlaceholderVariable(NDShape::Unknown, name, Axis::UnknownDynamicAxes);
+        return PlaceholderVariable(NDShape::Unknown, name, Axis::UnknownDynamicAxes());
     }
 
     ///
     /// Create an 'Input' Variable denoting sparse data and specify if gradients are to be computed for this input
     ///
-    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name /*= L""*/, const std::vector<Axis>& dynamicAxes /*= Axis::DefaultInputVariableDynamicAxes*/)
+    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name /*= L""*/, const std::vector<Axis>& dynamicAxes /*= Axis::DefaultInputVariableDynamicAxes()*/)
     {
         return Variable(shape, isSparse, dataType, needsGradient, name, dynamicAxes, Internal::GenerateUid(VariableKind::Input));
     }
@@ -1858,7 +1858,7 @@ private:
     ///
     /// Create an 'Input' Variable and specify if gradients are to be computed for this input
     ///
-    inline Variable InputVariable(const NDShape& shape, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name = L"", const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes)
+    inline Variable InputVariable(const NDShape& shape, ::CNTK::DataType dataType, bool needsGradient, const std::wstring& name = L"", const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes())
     {
         return InputVariable(shape, /*isSparse =*/ false, dataType, needsGradient, name, dynamicAxes);
     }
@@ -1866,7 +1866,7 @@ private:
     ///
     /// Create an 'Input' Variable.
     ///
-    inline Variable InputVariable(const NDShape& shape, DataType dataType, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes)
+    inline Variable InputVariable(const NDShape& shape, DataType dataType, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes())
     {
         return InputVariable(shape, dataType, /*needsGradient =*/ false, name, dynamicAxes);
     }
@@ -1874,7 +1874,7 @@ private:
     ///
     /// Create an 'Input' Variable.
     ///
-    inline Variable InputVariable(const NDShape& shape, DataType dataType, const wchar_t* name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes)
+    inline Variable InputVariable(const NDShape& shape, DataType dataType, const wchar_t* name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes())
     {
         return InputVariable(shape, dataType, std::wstring(name), dynamicAxes);
     }
@@ -1882,7 +1882,7 @@ private:
     ///
     /// Create an 'Input' Variable.
     ///
-    inline Variable InputVariable(const NDShape& shape, DataType dataType, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes)
+    inline Variable InputVariable(const NDShape& shape, DataType dataType, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes())
     {
         return InputVariable(shape, dataType, L"", dynamicAxes);
     }
@@ -1890,7 +1890,7 @@ private:
     ///
     /// Create an 'Input' Variable denoting sparse data.
     ///
-    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes)
+    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, const std::wstring& name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes())
     {
         return InputVariable(shape, isSparse, dataType, /*needsGradient =*/ false, name, dynamicAxes);
     }
@@ -1898,7 +1898,7 @@ private:
     ///
     /// Create an 'Input' Variable denoting sparse data.
     ///
-    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, const wchar_t* name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes)
+    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, const wchar_t* name, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes())
     {
         return InputVariable(shape, isSparse, dataType, std::wstring(name), dynamicAxes);
     }
@@ -1906,7 +1906,7 @@ private:
     ///
     /// Create an 'Input' Variable denoting sparse data.
     ///
-    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes)
+    inline Variable InputVariable(const NDShape& shape, bool isSparse, ::CNTK::DataType dataType, const std::vector<Axis>& dynamicAxes = Axis::DefaultInputVariableDynamicAxes())
     {
         return InputVariable(shape, isSparse, dataType, L"", dynamicAxes);
     }
